@@ -14,17 +14,19 @@ This walkthrough works as of 2023-01-31. Unfortunately, future changes to either
 
 2. [Create a storage account](#Create-a-storage-account)
 
-3. [Create auto-scaling kubernetes cluster](#create-auto-scaling-kubernetes-cluster) 
+3. [Get example data from this repo](#get-example-data-from-this-repo)
 
-4. [Optionally build our own docker image of snakemake](#optionally-build-our-own-docker-image-of-snakemake)
+4. [Create auto-scaling kubernetes cluster](#create-auto-scaling-kubernetes-cluster) 
 
-5. [Run the workflow](#run-the-workflow)
+5. [Optionally build our own docker image of snakemake](#optionally-build-our-own-docker-image-of-snakemake)
+
+6. [Run the workflow](#run-the-workflow)
 
 ## Main changes from official snakemake tutorial
 
 A snakemake tutorial repo can be found [here](https://github.com/snakemake/snakemake-tutorial-data), but it doesn't work for AKS out of the box. 
 
-I modified the above resource in the following ways:
+I modified this repo in the following ways:
 
 * copied [this workflow](https://snakemake.readthedocs.io/en/stable/tutorial/basics.html#summary) to a Snakefile
 
@@ -32,9 +34,17 @@ I modified the above resource in the following ways:
 
 * Removed `data/samples/C.fastq` because it was unecessary to provide a minimal snakemake example and also not included in Snakefile
 
-* Added `conda: "enviornment.yaml"` to each snakemake rule so that kubernetes would install software on the fly
+* Added `conda: "enviornment.yaml"` to each snakemake rule in the Snakefile so that kubernetes would install software on the fly
 
 * Added genome BWA index to input of the `bwa_map` rule. BWA mem needs the index in order to run, but kubernetes won't download the index to its nodes unless the index is defined in the input.
+
+* Created a custom docker image with snakemake, kubernetes, and azure-blob-storage installed which kubernetes can use
+
+The main lessons I learned are:
+
+* A kubernetes job will only download files to the compute nodes if they are defined in the snakemake rule 
+
+* The snakemake image that kubernetes uses needs the `azure-blob-storage` dependency in order to work 
 
 ## References
 
@@ -156,6 +166,8 @@ stgkey=$(az storage account keys list -g $resgroup -n $stgacct | jq .[1].value |
 
 # finally, create the storage container
 az storage container create --resource-group $resgroup --account-name $stgacct --account-key $stgkey --name snakemake-tutorial
+
+```
 
 ## Get example data from this repo
 
